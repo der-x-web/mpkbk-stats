@@ -332,14 +332,37 @@ function engraved(text,opt){
   /* 4. тело */
   x.fillStyle=opt.ink||'#0B0B0B'; each((ch,px)=>x.fillText(ch,px,by));
 
-  /* 5. штриховка внутри тела — маской по глифам */
+  /* 5. сетка внутри тела — маской по глифам.
+     У них это не полоски, а кирпичная кладка: белые ряды идут пунктиром, и
+     тёмные перемычки между штрихами смещены через ряд на половину шага.
+     Замер по их заголовку «НОВОСТЬ»: ряд через 2 px, перемычка через ~3.5 px
+     при толщине в пиксель. Здесь всё рисуется в кегле 140 и потом садится
+     на высоту блока, поэтому шаги заданы в единицах рисунка. */
   const t=document.createElement('canvas'); t.width=W; t.height=H;
   const y=t.getContext('2d');
-  y.font=font; y.textBaseline='alphabetic'; y.fillStyle='#000';
-  let px=bx; chars.forEach((ch,i)=>{ y.fillText(ch,px,by); px+=widths[i]+tr; });
-  y.globalCompositeOperation='source-in';
-  y.strokeStyle=opt.paper||'#FFFFFF'; y.lineWidth=hatchW;
-  for(let ly=0;ly<H;ly+=hatch){ y.beginPath(); y.moveTo(0,ly+0.5); y.lineTo(W,ly+0.5); y.stroke(); }
+  /* Сначала кладу сетку на весь лист, и только потом обрезаю её по буквам.
+     Наоборот нельзя: source-in оставляет от холста только то, что попало под
+     очередной штрих, то есть каждая следующая линия стирала все предыдущие,
+     и от всей сетки доживала одна — поэтому буквы и выходили залитыми. */
+  y.strokeStyle=opt.paper||'#FFFFFF'; y.lineWidth=hatchW; y.lineCap='butt';
+  const dash=opt.brick||0, gap=opt.brickGap||0, step=dash+gap;
+  if(dash>0) y.setLineDash([dash,gap]);
+  for(let ly=0,row=0;ly<H;ly+=hatch,row++){
+    if(dash>0) y.lineDashOffset=(row%2)*step/2;
+    y.beginPath(); y.moveTo(0,ly+0.5); y.lineTo(W,ly+0.5); y.stroke();
+  }
+  y.setLineDash([]);
+  /* Обрезаю по телу буквы. Маску собираю на отдельном листе и накладываю
+     одним заходом: destination-in оставляет от холста только то, что попало
+     под текущий рисунок, поэтому буква за буквой стёрла бы всё, кроме
+     последней. Белое кольцо лежит обводкой по контуру, и его внутреннюю
+     половину уже закрыла заливка тела, так что на кольцо сетка не наползает. */
+  const mk=document.createElement('canvas'); mk.width=W; mk.height=H;
+  const m2=mk.getContext('2d');
+  m2.font=font; m2.textBaseline='alphabetic'; m2.fillStyle='#000';
+  let px=bx; chars.forEach((ch,i)=>{ m2.fillText(ch,px,by); px+=widths[i]+tr; });
+  y.globalCompositeOperation='destination-in';
+  y.drawImage(mk,0,0);
   x.drawImage(t,0,0);
 
   return {url:c.toDataURL('image/png'),w:W,h:H};
@@ -520,7 +543,7 @@ function paintHead(){
   const img=$('hdr');
   if(!text){ img.removeAttribute('src'); img.style.display='none'; return; }
   img.style.display='';
-  const mk=s=>engraved(text,{font:"400 "+s+"px 'Kelly Slab', serif",pad:18,depth:11,track:3,hatch:4,hatchW:1.7});
+  const mk=s=>engraved(text,{font:"900 "+s+"px 'Playfair Display', serif",pad:18,depth:11,track:3,hatch:2.6,hatchW:1.3,brick:4.4,brickGap:1.3});
   let size=140, r=mk(size);
   while(r.w>968 && size>50){ size-=4; r=mk(size); }
   img.src=r.url;
