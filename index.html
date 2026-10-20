@@ -99,7 +99,7 @@ textarea.big{min-height:150px;font-size:11px}
   font-family:"Zapus Sans",sans-serif;font-synthesis:none;
   --ink:#0B0B0B; --dim:#7B7B7B; --rule:#0B0B0B; --acc:#F2641B}
 
-.ttl{flex:0 0 auto;display:flex;justify-content:center;align-items:center;height:80px;margin-bottom:40px}
+.ttl{flex:0 0 auto;display:flex;justify-content:center;align-items:center;height:111px;margin-bottom:40px}
 .ttl img{height:100%;width:auto;display:block}
 
 .meta{position:relative;flex:0 0 58px;display:flex;align-items:center;justify-content:center;gap:16px;
@@ -520,7 +520,7 @@ function paintHead(){
   const img=$('hdr');
   if(!text){ img.removeAttribute('src'); img.style.display='none'; return; }
   img.style.display='';
-  const mk=s=>engraved(text,{font:"400 "+s+"px 'Kelly Slab', serif",pad:28,depth:11,track:3,hatch:4,hatchW:1.7});
+  const mk=s=>engraved(text,{font:"400 "+s+"px 'Kelly Slab', serif",pad:18,depth:11,track:3,hatch:4,hatchW:1.7});
   let size=140, r=mk(size);
   while(r.w>968 && size>50){ size-=4; r=mk(size); }
   img.src=r.url;
